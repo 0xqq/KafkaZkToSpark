@@ -9,19 +9,23 @@
     <artifactId>spark</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+
     <!--依赖-->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spark.version>1.6.2</spark.version>
-        <scala.version>2.10.4</scala.version>
+        <spark.version>2.2.0</spark.version>
+        <scala.version>2.11.8</scala.version>
+        <spark.streaming.version>2.1.0</spark.streaming.version>
         <hadoop.version>2.6.0</hadoop.version>
+        <spark.kafka.version>2.0.2</spark.kafka.version>
+        <kafka.version>0.9.0.0</kafka.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
-            <version>1.6.2</version>
+            <artifactId>spark-core_2.11</artifactId>
+            <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -30,13 +34,13 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_2.10</artifactId>
-            <version>1.6.2</version>
+            <artifactId>spark-streaming_2.11</artifactId>
+            <version>${spark.streaming.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming-kafka_2.10</artifactId>
-            <version>1.6.2</version>
+            <artifactId>spark-streaming-kafka-0-8_2.11</artifactId>
+            <version>${spark.kafka.version}</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>

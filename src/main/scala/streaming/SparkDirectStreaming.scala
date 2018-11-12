@@ -12,6 +12,9 @@ import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import java.sql.Connection
+import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import org.spark_project.jetty.server.{Request, Server}
+import org.spark_project.jetty.server.handler.{AbstractHandler, ContextHandler}
 
 import org.apache.log4j.{Level, Logger}
 
@@ -35,6 +38,9 @@ object SparkDirectStreaming {
     //方式一:根据扫描文件关闭
     stopByMarkFile(ssc)
 
+    //启动接受停止请求的守护进程
+    //方式二通过Http方式优雅的关闭策略
+    daemonHttpServer(5555,ssc)
 
     ssc.awaitTermination()
 
@@ -193,7 +199,6 @@ object SparkDirectStreaming {
                         zkOffsetPath: String,
                         topic: Set[String]): InputDStream[(String, String)] = {
 
-    //目前仅支持一个topic的偏移量处理，读取zk里面偏移量字符串
     val zkOffsetData = KafkaOffsetManager.readOffsets(zkClient, zkOffsetPath, topic.last)
 
     val kafkaStream = zkOffsetData match {
@@ -204,6 +209,7 @@ object SparkDirectStreaming {
       case Some(lastStopOffset) =>
         log.info("从zk中读取到偏移量,从上次的偏移量开始消费数据......" + Some(lastStopOffset))
         val messageHandler = (mmd: MessageAndMetadata[String, String]) => (mmd.key, mmd.message())
+
         //使用上次停止时候的偏移量创建DirectStream
         KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, lastStopOffset, messageHandler)
 
@@ -233,6 +239,37 @@ object SparkDirectStreaming {
     } catch {
       case e: Exception =>
         log.error("Error in execution of insert. " + e.getMessage)
+    }
+  }
+
+
+  /****
+    * 负责启动守护的jetty服务
+    * @param port 对外暴露的端口号
+    * @param ssc Stream上下文
+    */
+  def daemonHttpServer(port:Int,ssc: StreamingContext)={
+    val server=new Server(port)
+    val context = new ContextHandler();
+    context.setContextPath( "/close" );
+    context.setHandler( new CloseStreamHandler(ssc) )
+    server.setHandler(context)
+    server.start()
+  }
+
+  /*** 负责接受http请求来优雅的关闭流
+    * @param ssc  Stream上下文
+    */
+  class CloseStreamHandler(ssc:StreamingContext) extends AbstractHandler {
+    override def handle(s: String, baseRequest: Request, req: HttpServletRequest, response: HttpServletResponse): Unit ={
+      log.warn("开始关闭......")
+      ssc.stop(true,true)//优雅的关闭
+      response.setContentType("text/html; charset=utf-8");
+      response.setStatus(HttpServletResponse.SC_OK);
+      val out = response.getWriter();
+      out.println("close success");
+      baseRequest.setHandled(true);
+      log.warn("关闭成功.....")
     }
   }
 

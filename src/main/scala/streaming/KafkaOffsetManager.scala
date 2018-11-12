@@ -32,9 +32,9 @@ object KafkaOffsetManager {
         val lastset_partitions = ZkUtils.getPartitionsForTopics(zkClient,Seq(topic)).get(topic).get
         log.warn("zk最新分区信息"+offsetsRangesStr.toString)
         //zookeeper 中数据[String:String,String:String]
-        val offsets = offsetsRangesStr.split(",") //按逗号split成数组
+        var offsets = offsetsRangesStr.split(",") //按逗号split成数组
           .map(s => s.split(":")) //按冒号拆分每个分区和偏移量
-          .map{case Array(partitionStr,offsetStr) => TopicAndPartition(topic, partitionStr.toInt) -> offsetStr.toLong } //加工成最终的格式
+          .map { case Array(partitionStr, offsetStr) => TopicAndPartition(topic, partitionStr.toInt) -> offsetStr.toLong } //加工成最终的格式
           .toMap //返回一个map
 
         //说明有分区扩展了
